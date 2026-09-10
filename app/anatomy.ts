@@ -86,6 +86,13 @@ export function isPartVisible(part:Part,state:Pick<SceneState,'visible'|'selecte
  if(state.region&&partRegion(part,body)!==state.region&&!selected)return false;
  return true;
 }
+/** One highlighted group from an answer: the meshes, why they are lit, what to call them. */
+export interface FocusGroup {parts:string[];role:'primary'|'secondary';label:string}
+export interface SceneState {inspectorOpen?:boolean;explode:number;visible:SystemId[];selected:string[];isolate:boolean;region:RegionId|null;area:AreaId|null;view:View;rotate:boolean;reset:number;
+ /** Set by an answer. Non-empty means: frame these, recede everything else. */
+ focus:FocusGroup[];
+ /** Bumped to replay the camera flight for an unchanged focus. */
+ focusNonce:number}
 export const DEFAULT_VISIBLE:SystemId[] = ['cardiac','sensory','skeletal','muscular','arterial','venous','nervous','respiratory','digestive','urinary','lymphatic','endocrine','reproductive','connective'];
 export const EXPLANATIONS:Record<string,string> = {
  'heart':'A muscular pump in the chest. Its right side sends blood to the lungs; its left side sends blood through the systemic circulation.',
