@@ -1,4 +1,4 @@
-export type SystemId = 'skeletal'|'muscular'|'arterial'|'venous'|'nervous'|'digestive'|'respiratory'|'urinary'|'reproductive'|'lymphatic'|'endocrine'|'integumentary'|'connective'|'sensory'|'cardiac'|'pregnancy';
+export type SystemId = 'skeletal'|'muscular'|'arterial'|'venous'|'nervous'|'digestive'|'respiratory'|'urinary'|'reproductive'|'lymphatic'|'endocrine'|'integumentary'|'connective'|'sensory'|'cardiac'|'pregnancy'|'mammary';
 export const SYSTEMS: {id:SystemId;name:string;color:string;description:string}[] = [
  {id:'skeletal',name:'Skeleton',color:'#e2d9ba',description:'Bones form the supporting framework of the body, protect organs, and provide attachment points for muscles. Their internal tissue also stores minerals and produces blood cells.'},
  {id:'muscular',name:'Muscles',color:'#a85b50',description:'Skeletal muscles generate movement by pulling on their attachments. Together with tendons, they move joints, stabilize posture, and produce heat.'},
@@ -16,10 +16,11 @@ export const SYSTEMS: {id:SystemId;name:string;color:string;description:string}[
  {id:'integumentary',name:'Body surface',color:'#ba9b7d',description:'The body surface provides an outer anatomical reference. The integumentary system forms a protective barrier and contributes to sensation and temperature regulation.'},
  {id:'connective',name:'Connective tissue',color:'#aec3bb',description:'Cartilage, ligaments, and other connective tissues support, connect, and separate structures. Their roles include stabilizing joints and distributing mechanical loads.'},
  {id:'pregnancy',name:'Pregnancy reference',color:'#c9a8ad',description:'Placental and umbilical structures included in the female reference assembly. They represent a pregnancy reference rather than the non-pregnant state, and are hidden unless enabled.'},
+ {id:'mammary',name:'Breast tissue',color:'#d8bd82',description:'Breast tissue includes adipose tissue, mammary glands, ducts, and connective supports. It lies over the pectoral muscles and does not act as a skeletal muscle to move the shoulder. Colors distinguish tissue types; they do not show activation or fiber direction.'},
 ];
-export interface Part {id:string;name:string;conceptId:string;system:SystemId;chunk:number;positions:number;normals:number;indices:number;vertexCount:number;indexCount:number;bounds:[number[],number[]]}
+export interface Part {id:string;name:string;conceptId:string;system:SystemId;chunk:number;positions:number;normals:number;indices:number;vertexCount:number;indexCount:number;bounds:[number[],number[]];provenance?:{source:string;sourceId:string;adaptation:string}}
 export interface Concept {id:string;name:string;elements:string[]}
-export interface Atlas {version:string;sex?:'male'|'female';source?:string;scope?:string;parts:Part[];concepts:Concept[];chunks:{url:string;bytes:number;gzip?:string;gzipBytes?:number;system?:SystemId;parts?:number}[];triangles:number}
+export interface Atlas {version:string;sex?:'male'|'female';source?:string;scope?:string;reconstruction?:boolean;parts:Part[];concepts:Concept[];chunks:{url:string;bytes:number;gzip?:string;gzipBytes?:number;system?:SystemId;parts?:number}[];triangles:number}
 export type View = 'three-quarter'|'front'|'back'|'side';
 export type RegionId='head-neck'|'torso'|'abdomen'|'arm'|'pelvis'|'legs';
 export const REGIONS:{id:RegionId;name:string;label:string}[]=[
@@ -50,8 +51,7 @@ export const AREAS:{id:AreaId;name:string;regions:RegionId[];match:RegExp}[]=[
  {id:'popliteal',name:'Popliteal fossa',regions:['legs'],match:/(popliteal|popliteus|genicular)/i},
  {id:'foot',name:'Foot',regions:['legs'],match:/\b(foot|toe|talus|calcaneus|metatars|cuneiform|navicular|cuboid|plantar|hallucis|dorsal venous arch of .+ foot)/i},
 ];
-export interface SceneState {inspectorOpen?:boolean;explode:number;visible:SystemId[];selected:string[];isolate:boolean;region:RegionId|null;area:AreaId|null;view:View;rotate:boolean;reset:number}
-/** Body-normalized Y of C7 vs T1: head/neck includes C7 and above. Arm floor sits below hanging fingertips, still above the femoral centroid. */
+
 export const REGION_Y={head:0.835,torso:0.7,abdomen:0.56,pelvis:0.45,arm:0.41,shoulder:0.73} as const;
 const ARM_LATERAL=0.22,SHOULDER_LATERAL=0.165;
 const ARM_NAME=/\b(clavicle|scapula|subclavius)\b/i;
@@ -79,23 +79,36 @@ export function partInArea(part:Part,areaId:AreaId,body:[number[],number[]]){
  if(area.id==='foot'&&partRegion(part,body)!=='legs')return false;
  return true;
 }
-export function isPartVisible(part:Part,state:Pick<SceneState,'visible'|'selected'|'isolate'|'region'|'area'>,body:[number[],number[]]){
+export type BreastView = 'tissue'|'cutaway'|'muscle';
+/** A structure showing regardless of the chest preset (mammary tissue, or the
+ * female-specific skin overlay) unless it has been deliberately isolated. */
+const BREAST_SKIN=/^VH_F_/,BREAST_FAT=/^VH_F_fat_[LR]$/;
+export function isBreastPart(part:Part){return part.system==='mammary'||(part.system==='integumentary'&&BREAST_SKIN.test(part.id)&&part.id!=='VH_F_skin');}
+/** Whether a chest-preset (Tissue/Glands/Pectorals) hides this part, independent of system/region/area filters. */
+export function breastVisible(part:Part,breastView:BreastView){
+ if(isBreastPart(part)&&breastView==='muscle')return false;
+ return !(breastView==='cutaway'&&BREAST_FAT.test(part.id));
+}
+export function isPartVisible(part:Part,state:Pick<SceneState,'visible'|'selected'|'isolate'|'region'|'area'|'breastView'>,body:[number[],number[]]){
  if(state.isolate)return state.selected.includes(part.id);
- const selected=state.selected.includes(part.id);
- if(!state.visible.includes(part.system)&&!selected)return false;
- if(state.area)return selected||partInArea(part,state.area,body);
- if(state.region&&partRegion(part,body)!==state.region&&!selected)return false;
+ if(state.selected.includes(part.id))return true;
+ if(!state.visible.includes(part.system))return false;
+ if(!breastVisible(part,state.breastView))return false;
+ if(state.area)return partInArea(part,state.area,body);
+ if(state.region&&partRegion(part,body)!==state.region)return false;
  return true;
 }
 /** One highlighted group from an answer: the meshes, why they are lit, what to call them. */
 export interface FocusGroup {parts:string[];role:'primary'|'secondary';label:string}
-export interface SceneState {inspectorOpen?:boolean;explode:number;visible:SystemId[];selected:string[];isolate:boolean;region:RegionId|null;area:AreaId|null;view:View;rotate:boolean;reset:number;
+export interface SceneState {breastView:BreastView;inspectorOpen?:boolean;explode:number;visible:SystemId[];selected:string[];isolate:boolean;region:RegionId|null;area:AreaId|null;view:View;rotate:boolean;reset:number;
  /** Set by an answer. Non-empty means: frame these, recede everything else. */
  focus:FocusGroup[];
  /** Bumped to replay the camera flight for an unchanged focus. */
  focusNonce:number}
-export const DEFAULT_VISIBLE:SystemId[] = ['cardiac','sensory','skeletal','muscular','arterial','venous','nervous','respiratory','digestive','urinary','lymphatic','endocrine','reproductive','connective'];
+export const DEFAULT_VISIBLE:SystemId[] = ['cardiac','sensory','skeletal','muscular','arterial','venous','nervous','respiratory','digestive','urinary','lymphatic','endocrine','reproductive','connective','mammary'];
 export const EXPLANATIONS:Record<string,string> = {
+ 'adipose tissue of left breast':'Fat contributes to breast volume and contour, surrounding the mammary glands and ducts. It lies superficial to the pectoral muscles and does not contract to move the shoulder.',
+ 'adipose tissue of right breast':'Fat contributes to breast volume and contour, surrounding the mammary glands and ducts. It lies superficial to the pectoral muscles and does not contract to move the shoulder.',
  'heart':'A muscular pump in the chest. Its right side sends blood to the lungs; its left side sends blood through the systemic circulation.',
  'liver':'A large organ beneath the right side of the diaphragm. It processes absorbed nutrients, produces bile, and synthesizes many proteins carried in the blood.',
  'brain':'The central organ of the nervous system. Its interconnected regions support perception, movement, memory, language, and the regulation of bodily functions.',
@@ -168,12 +181,13 @@ export const MODES: Mode[] = [
 
 
 /** The reference bodies this viewer ships. */
-export interface Body {id:'male'|'female';label:string;file:string;source:string}
+export interface Body {id:'male'|'female'|'female-reconstructed';label:string;file:string;source:string}
 export const BODIES: Body[] = [
  {id:'male',label:'Male',file:'atlas.json',source:'BodyParts3D'},
  {id:'female',label:'Female',file:'atlas-female.json',source:'Human Reference Atlas'},
+ {id:'female-reconstructed',label:'Female (Full body)',file:'atlas-female-reconstructed.json',source:'BodyParts3D + HRA'},
 ];
-export function explanation(name:string,system:SystemId){return EXPLANATIONS[name.toLowerCase()] ?? SYSTEMS.find(s=>s.id===system)?.description ?? '';}
+export function explanation(name:string,system:SystemId,sex:'male'|'female'='male'){return EXPLANATIONS[name.toLowerCase()] ?? (sex==='female'&&system==='reproductive'?'Female reproductive structures represented in this reference include the ovaries, uterine tubes, uterus, cervix, vagina, and supporting tissues.':SYSTEMS.find(s=>s.id===system)?.description) ?? '';}
 
 /** The steps of a mode's walkthrough that this atlas can actually show.
  *
