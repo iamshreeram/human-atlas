@@ -11,7 +11,8 @@
     "build:vercel": "node scripts/build-catalog.mjs && vite build",
     "check": "tsc --noEmit",
     "build:catalog": "node scripts/build-catalog.mjs",
-    "validate": "node scripts/validate-atlas.mjs && node scripts/validate-atlas.mjs atlas-female.json && node scripts/validate-modes.mjs && node scripts/validate-modes.mjs atlas-female.json && node scripts/validate-interactions.mjs"
+    "validate": "node scripts/validate-atlas.mjs && node scripts/validate-atlas.mjs atlas-female.json && node scripts/validate-modes.mjs && node scripts/validate-modes.mjs atlas-female.json && node scripts/validate-interactions.mjs",
+    "lint": "oxlint --deny-warnings app components scripts web"
   },
   "dependencies": {
     "@base-ui/react": "1.7.0",
