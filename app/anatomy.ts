@@ -181,11 +181,10 @@ export const MODES: Mode[] = [
 
 
 /** The reference bodies this viewer ships. */
-export interface Body {id:'male'|'female'|'female-reconstructed';label:string;file:string;source:string}
+export interface Body {id:'male'|'female';label:string;file:string;source:string}
 export const BODIES: Body[] = [
  {id:'male',label:'Male',file:'atlas.json',source:'BodyParts3D'},
- {id:'female',label:'Female',file:'atlas-female.json',source:'Human Reference Atlas'},
- {id:'female-reconstructed',label:'Female (Full body)',file:'atlas-female-reconstructed.json',source:'BodyParts3D + HRA'},
+ {id:'female',label:'Female',file:'atlas-female-reconstructed.json',source:'BodyParts3D + HRA'},
 ];
 export function explanation(name:string,system:SystemId,sex:'male'|'female'='male'){return EXPLANATIONS[name.toLowerCase()] ?? (sex==='female'&&system==='reproductive'?'Female reproductive structures represented in this reference include the ovaries, uterine tubes, uterus, cervix, vagina, and supporting tissues.':SYSTEMS.find(s=>s.id===system)?.description) ?? '';}
 
