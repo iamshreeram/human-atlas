@@ -1,4 +1,5 @@
 import {flushSync} from 'react-dom';
+import {withBase} from './asset-url';
 import {registerAtlasTools} from './agent-tools';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {Activity,ArrowLeft,ArrowUpRight,ChevronRight,Focus,Info,Layers3,MessageCircleQuestion,Pause,RotateCcw,RotateCw,Search,Send,Sparkles,X} from 'lucide-react';
@@ -24,7 +25,7 @@ export default function Home(){
  // The requested mode is applied in the same pass that installs the catalogue,
  // so there is no window in which the full body is the current state.
  useEffect(()=>{const abort=new AbortController(),requested=requestedMode();setProgress(0);setError('');setAtlas(null);setChosen(null);setDetails(false);setMode(requested);setState(stateFor(requested));
-  fetch(`/models/${body.file}`,{signal:abort.signal}).then(r=>{if(!r.ok)throw new Error('The anatomy catalogue could not be loaded.');return r.json() as Promise<Atlas>;}).then(data=>{
+  fetch(withBase(`/models/${body.file}`),{signal:abort.signal}).then(r=>{if(!r.ok)throw new Error('The anatomy catalogue could not be loaded.');return r.json() as Promise<Atlas>;}).then(data=>{
    setAtlas(data);
    if(!requested)return;
    const concept=tourFor(data,requested)[0]??null;

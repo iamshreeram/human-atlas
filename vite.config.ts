@@ -37,4 +37,4 @@ function anatomyApi(mode:string):Plugin{
  };
 }
 
-export default defineConfig(({mode})=>({root:path('./web'),publicDir:path('./public'),plugins:[react(),anatomyApi(mode)],resolve:{alias:{'@':path('./')}},css:{postcss:{plugins:[tailwindcss()]}},server:{watch:{usePolling:true}},build:{outDir:path('./dist'),emptyOutDir:true}}));
+export default defineConfig(({mode})=>({root:path('./web'),base:process.env.GH_PAGES_BASE??'/',publicDir:path('./public'),plugins:[react(),anatomyApi(mode)],resolve:{alias:{'@':path('./')}},css:{postcss:{plugins:[tailwindcss()]}},server:{watch:{usePolling:true}},build:{outDir:path('./dist'),emptyOutDir:true}}));

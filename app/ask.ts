@@ -1,4 +1,5 @@
 import type {Scene} from '@/api/scene';
+import {withBase} from './asset-url';
 
 export type {Scene};
 
@@ -10,7 +11,7 @@ export async function ask(
   handlers: {onScene: (scene: Scene) => void; onAnswer: (scene: Scene) => void},
   signal?: AbortSignal,
 ): Promise<void> {
-  const response = await fetch('/api/ask', {
+  const response = await fetch(withBase('/api/ask'), {
     method: 'POST',
     headers: {'content-type': 'application/json'},
     body: JSON.stringify({question}),

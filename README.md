@@ -117,6 +117,12 @@ change to the display-system mapping.
 
 Import this repository into Vercel as a Vite project. The included `vercel.json` configures `npm ci`, `npm run build`, and the `dist` output directory. It can also be served by a static host.
 
+### GitHub Pages
+
+The 3D viewer itself (both bodies, systems, regions, teaching areas, study modes, search) is a static app and works fine on GitHub Pages. The one thing that won't work there is the "Ask the anatomy" assistant (`api/ask.ts`), since it needs a server to hold its API key and GitHub Pages only serves static files — it fails gracefully (shows "API_KEY is not set") rather than breaking anything else.
+
+To publish: enable Pages for this repository (Settings → Pages → Source: GitHub Actions), then run the included `.github/workflows/deploy-pages.yml` workflow (it's manual-trigger by default — `Actions` tab → "Deploy to GitHub Pages" → "Run workflow"). It builds with `npm run build:gh-pages`, which sets the base path to `/human-atlas/` to match a GitHub Pages project-site URL (`<user>.github.io/human-atlas/`). If you fork this under a different repo name, update `GH_PAGES_BASE` in that npm script to match.
+
 ## License
 
 Original application code is released under the [MIT License](LICENSE). **The anatomy data has its own CC BY 4.0 license**; preserve the attribution when redistributing it. Third-party dependencies retain their respective licenses.

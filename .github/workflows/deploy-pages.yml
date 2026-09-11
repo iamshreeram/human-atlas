@@ -1,0 +1,52 @@
+name: Deploy to GitHub Pages
+
+# Manual for now (workflow_dispatch) so enabling this doesn't silently start
+# publishing on every push to main. Add `push: {branches: [main]}` under `on`
+# once you're ready for it to deploy automatically.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci
+
+      # The AI "Ask the anatomy" assistant (api/ask.ts) needs a server to hold
+      # its API key and isn't part of this build — GitHub Pages only serves
+      # static files, so that feature intentionally has no working backend
+      # here and will show "API_KEY is not set" if opened. Everything else
+      # (both bodies, systems, regions, study modes, search) is fully static
+      # and works normally.
+      - name: Build (GitHub Pages base path)
+        run: npm run build:gh-pages
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
