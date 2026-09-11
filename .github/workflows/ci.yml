@@ -20,6 +20,11 @@ jobs:
       matrix:
         # The floor declared in package.json engines, and current.
         node: ['22.13', '24']
+    # scripts/validate-{interactions,modes}.mjs import app/*.ts directly.
+    # Node's built-in TS support is unflagged from ~23.6 on but still needs
+    # this flag on the 22.13 floor version above; harmless to set on both.
+    env:
+      NODE_OPTIONS: --experimental-strip-types
     steps:
       - uses: actions/checkout@v4
 
