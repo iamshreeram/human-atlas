@@ -7,7 +7,7 @@ import {CameraFlight,frameBox,layoutLabels,type LabelAnchor} from './focus';
 import {createExplosionLayout} from './explosion-layout';
 import {decodeModelResponse} from './model-download';
 import {PointerTap} from './pointer-tap';
-import {SYSTEMS,bodyBounds,breastVisible,partInArea,partRegion,type Atlas,type SceneState} from './anatomy';
+import {SYSTEMS,bodyBounds,partInArea,partRegion,type Atlas,type SceneState} from './anatomy';
 import {withBase} from './asset-url';
 interface Props {atlas:Atlas;state:SceneState;onSelect:(id:string)=>void;onProgress:(n:number)=>void;onError:(s:string)=>void}
 export default function AnatomyScene({atlas,state,onSelect,onProgress,onError}:Props){
@@ -159,13 +159,13 @@ export default function AnatomyScene({atlas,state,onSelect,onProgress,onError}:P
   const animate=()=>{
    if(disposed)return;frame=requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05),s=latest.current;
    const focusSet=new Set(s.focus.flatMap(g=>g.parts));
-   const changed=lastState?.visible!==s.visible||lastState?.selected!==s.selected||lastState?.isolate!==s.isolate||lastState?.region!==s.region||lastState?.area!==s.area||lastState?.focus!==s.focus||lastState?.breastView!==s.breastView;
+   const changed=lastState?.visible!==s.visible||lastState?.selected!==s.selected||lastState?.isolate!==s.isolate||lastState?.region!==s.region||lastState?.area!==s.area||lastState?.focus!==s.focus;
    if(changed)ensureChunks(s);
    const moving=Math.abs(amount-s.explode)>.0001;
    if(moving){amount=T.MathUtils.damp(amount,s.explode,8,dt);dirty=true;}
    if(changed||moving||lastExtent<0){
     const visible=new Set(s.visible),selection=new Set(s.selected);
-    const shown=(p:typeof atlas.parts[number],i:number)=>s.isolate?selection.has(p.id):(visible.has(p.system)||selection.has(p.id))&&breastVisible(p,s.breastView)&&(s.area?partInArea(p,s.area,body)||selection.has(p.id):!s.region||regions[i]===s.region||selection.has(p.id));
+    const shown=(p:typeof atlas.parts[number],i:number)=>s.isolate?selection.has(p.id):(visible.has(p.system)||selection.has(p.id))&&(s.area?partInArea(p,s.area,body)||selection.has(p.id):!s.region||regions[i]===s.region||selection.has(p.id));
     const visibleParts=atlas.parts.filter((p,i)=>shown(p,i));
     const nextLayoutKey=visibleParts.map(p=>p.id).join(',')+':'+camera.aspect.toFixed(3);
     if(nextLayoutKey!==layoutKey){const layout=createExplosionLayout(visibleParts,camera.aspect);packingWidth=layout.width;packingHeight=layout.height;atlas.parts.forEach((p,i)=>{const cell=layout.cells.get(p.id);offsets[i]=cell?new T.Vector3(cell.x,cell.y+.85,0):centers[i].clone();});layoutKey=nextLayoutKey;if(amount>.05&&!s.isolate)fit(s.view,Math.max(0,(amount-.3)/.7));}

@@ -78,28 +78,17 @@ export function partInArea(part:Part,areaId:AreaId,body:[number[],number[]]){
  if(area.id==='foot'&&partRegion(part,body)!=='legs')return false;
  return true;
 }
-export type BreastView = 'tissue'|'cutaway'|'muscle';
-/** A structure showing regardless of the chest preset (mammary tissue, or the
- * female-specific skin overlay) unless it has been deliberately isolated. */
-const BREAST_SKIN=/^VH_F_/,BREAST_FAT=/^VH_F_fat_[LR]$/;
-export function isBreastPart(part:Part){return part.system==='mammary'||(part.system==='integumentary'&&BREAST_SKIN.test(part.id)&&part.id!=='VH_F_skin');}
-/** Whether a chest-preset (Tissue/Glands/Pectorals) hides this part, independent of system/region/area filters. */
-export function breastVisible(part:Part,breastView:BreastView){
- if(isBreastPart(part)&&breastView==='muscle')return false;
- return !(breastView==='cutaway'&&BREAST_FAT.test(part.id));
-}
-export function isPartVisible(part:Part,state:Pick<SceneState,'visible'|'selected'|'isolate'|'region'|'area'|'breastView'>,body:[number[],number[]]){
+export function isPartVisible(part:Part,state:Pick<SceneState,'visible'|'selected'|'isolate'|'region'|'area'>,body:[number[],number[]]){
  if(state.isolate)return state.selected.includes(part.id);
  if(state.selected.includes(part.id))return true;
  if(!state.visible.includes(part.system))return false;
- if(!breastVisible(part,state.breastView))return false;
  if(state.area)return partInArea(part,state.area,body);
  if(state.region&&partRegion(part,body)!==state.region)return false;
  return true;
 }
 /** One highlighted group from an answer: the meshes, why they are lit, what to call them. */
 export interface FocusGroup {parts:string[];role:'primary'|'secondary';label:string}
-export interface SceneState {breastView:BreastView;inspectorOpen?:boolean;explode:number;visible:SystemId[];selected:string[];isolate:boolean;region:RegionId|null;area:AreaId|null;view:View;rotate:boolean;reset:number;
+export interface SceneState {inspectorOpen?:boolean;explode:number;visible:SystemId[];selected:string[];isolate:boolean;region:RegionId|null;area:AreaId|null;view:View;rotate:boolean;reset:number;
  /** Set by an answer. Non-empty means: frame these, recede everything else. */
  focus:FocusGroup[];
  /** Bumped to replay the camera flight for an unchanged focus. */

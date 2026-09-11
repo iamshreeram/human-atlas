@@ -12,7 +12,7 @@ import {Combobox,ComboboxInput,ComboboxContent,ComboboxList,ComboboxItem,Combobo
 import AnatomyScene from './scene';
 import {ask,type Scene} from './ask';
 import {AREAS,BODIES,DEFAULT_VISIBLE,MODES,REGIONS,SYSTEMS,EXPLANATIONS,bodyBounds,elementsWithin,explanation,isPartVisible,tourFor,type AreaId,type Atlas,type Body,type Concept,type Mode,type RegionId,type SceneState,type SystemId,type View} from './anatomy';
-const initial:SceneState={breastView:'tissue',explode:0,visible:DEFAULT_VISIBLE,selected:[],isolate:false,region:null,area:null,view:'three-quarter',rotate:false,reset:0,focus:[],focusNonce:0};
+const initial:SceneState={explode:0,visible:DEFAULT_VISIBLE,selected:[],isolate:false,region:null,area:null,view:'three-quarter',rotate:false,reset:0,focus:[],focusNonce:0};
 const SUGGESTIONS=['Where are my kidneys?','What is at L4-L5?','Which muscles do I use in a pushup?','How does blood leave the heart?'];
 const params=()=>typeof location==='undefined'?new URLSearchParams():new URLSearchParams(location.search);
 const requestedMode=()=>{const id=params().get('mode');return MODES.find(m=>m.id===id)??null;};
@@ -66,7 +66,7 @@ export default function Home(){
  const visibleCount=atlas&&bounds?atlas.parts.filter(p=>isPartVisible(p,state,bounds)).length:0;
  const chooseRegion=(id:RegionId|null)=>{setDetails(false);setState(s=>({...s,region:id,area:null,selected:[],isolate:false}));};
  const chooseArea=(id:AreaId)=>{setDetails(false);setState(s=>({...s,area:s.area===id?null:id,selected:[],isolate:false}));};
- const areas=AREAS.filter(a=>!state.region||a.regions.includes(state.region));
+ const areas=state.region?AREAS.filter(a=>a.regions.includes(state.region as RegionId)):[];
  const results=useMemo(()=>{if(!atlas)return[];const term=query.toLowerCase().trim();if(!term)return ['heart','brain','liver','stomach','spleen','pancreas','urinary bladder','trachea'].map(name=>atlas.concepts.find(c=>c.name.toLowerCase()===name)).filter((x):x is Concept=>!!x);return atlas.concepts.filter(c=>c.name.toLowerCase().includes(term)||c.id.toLowerCase().includes(term)).sort((a,b)=>a.name.length-b.name.length).slice(0,80);},[atlas,query]);
  const elementsFor=(c:Concept,visible:SystemId[])=>elementsWithin(c,parts,visible);
  const choose=(c:Concept)=>{setChosen(c);setState(s=>({...s,selected:elementsFor(c,s.visible),isolate:false,rotate:false}));setDetails(true);setPanel(null);};
@@ -88,7 +88,7 @@ export default function Home(){
   setStep(index);setChosen(concept);setDetails(true);
   setState(s=>({...s,selected:elementsFor(concept,mode.systems),isolate:false,rotate:false,reset:s.reset+1}));
  };
- const toggle=(id:SystemId)=>{setDetails(false);setScene(null);setMode(null);setState(s=>({...s,selected:[],isolate:false,focus:[],focusNonce:s.focusNonce+1,breastView:(id==='mammary'||id==='integumentary')&&!s.visible.includes(id)?'tissue':s.breastView,visible:s.visible.includes(id)?s.visible.filter(x=>x!==id):[...s.visible,id]}));};
+ const toggle=(id:SystemId)=>{setDetails(false);setScene(null);setMode(null);setState(s=>({...s,selected:[],isolate:false,focus:[],focusNonce:s.focusNonce+1,visible:s.visible.includes(id)?s.visible.filter(x=>x!==id):[...s.visible,id]}));};
  const reset=()=>{setState(s=>({...initial,visible:DEFAULT_VISIBLE,reset:s.reset+1,focusNonce:s.focusNonce+1}));setChosen(null);setDetails(false);setPanel(null);setScene(null);setAskError('');setMode(null);history.replaceState(null,'',link({mode:null}));};
  const link=(next:{mode?:string|null;body?:string})=>{const q=params();
   if('mode' in next){if(next.mode)q.set('mode',next.mode);else q.delete('mode');}
@@ -105,7 +105,6 @@ export default function Home(){
   <section className={`layers-panel glass ${panel==='layers'?'mobile-open':''}`} aria-label="Anatomical layers">
    <div className="panel-heading"><span>Systems</span><Button variant="ghost" className="mobile-only icon-button" onClick={()=>setPanel(null)} aria-label="Close systems"><X size={18}/></Button><Badge variant="secondary" className="desktop-only small-number">{activeSystems.length}</Badge></div>
    <div className="layer-presets"><Button variant="ghost" aria-pressed={activeSystems.every(x=>state.visible.includes(x.id))} onClick={()=>{setMode(null);setState(s=>({...s,selected:[],isolate:false,visible:activeSystems.map(x=>x.id)}));}}>All</Button><Button variant="ghost" aria-pressed={state.visible.length===1&&state.visible[0]==='skeletal'} onClick={()=>{setMode(null);setState(s=>({...s,selected:[],isolate:false,visible:['skeletal']}));}}>Skeleton</Button><Button variant="ghost" aria-pressed={state.visible.length===6&&['cardiac','respiratory','digestive','urinary','endocrine','reproductive'].every(id=>state.visible.includes(id as SystemId))} onClick={()=>{setMode(null);setState(s=>({...s,selected:[],isolate:false,visible:['cardiac','respiratory','digestive','urinary','endocrine','reproductive']}));}}>Organs</Button></div>
-   {body.id==='female'&&<div className="breast-views" role="group" aria-label="Chest tissue view"><span>Chest detail</span><div>{([{id:'tissue',label:'Tissue'},{id:'cutaway',label:'Glands'},{id:'muscle',label:'Pectorals'}] as const).map(view=><Button key={view.id} variant="ghost" aria-pressed={state.breastView===view.id} onClick={()=>{setDetails(false);setMode(null);setState(s=>({...s,breastView:view.id,selected:[],isolate:false,visible:[...new Set([...s.visible.filter(id=>id!=='integumentary'&&(view.id!=='muscle'||id!=='mammary')),...(view.id==='muscle'?[]:['mammary' as const]),'muscular' as const])]}));}}>{view.label}</Button>)}</div><p>{state.breastView==='tissue'?'Exposed fat and connective-tissue detail.':state.breastView==='cutaway'?'Outer fat envelope removed to reveal glands and ducts.':'Breast tissues hidden to reveal the chest muscles.'}</p></div>}
    <div className="panel-heading region-heading"><span>Regions</span><Button variant="ghost" className="region-body" aria-pressed={state.region===null} onClick={()=>chooseRegion(null)}>Body</Button></div>
    <div className="layer-presets region-presets">{REGIONS.map(r=><Button variant="ghost" key={r.id} title={r.id==='arm'?'Arm, shoulder, and hand':r.name} aria-label={r.id==='arm'?'Arm, shoulder, and hand':r.name} aria-pressed={state.region===r.id} onClick={()=>chooseRegion(r.id)}>{r.name}</Button>)}</div>
    {areas.length>0&&<><div className="panel-heading region-heading"><span>Areas</span></div>
@@ -116,7 +115,7 @@ export default function Home(){
     {mode&&<p className="mode-summary">{mode.summary}{tour.length>1?` ${tour.length} structures in order.`:''}</p>}
    </div>
    <div className="system-list">{activeSystems.map(s=><div className={`system-row ${state.visible.includes(s.id)?'enabled':''}`} key={s.id}><Button variant="ghost" className="system-name" title={`Show only ${s.name.toLowerCase()}`} onClick={()=>{setMode(null);setState(v=>({...v,visible:[s.id],isolate:false,selected:[]}));}}><span className="system-dot" style={{background:s.color}}/>{s.name}<span className="system-count">{counts[s.id]}</span></Button><Switch checked={state.visible.includes(s.id)} onCheckedChange={()=>toggle(s.id)} aria-label={`Show ${s.name.toLowerCase()}`} /></div>)}</div>
-   <div className="panel-foot"><span>{visibleCount.toLocaleString()} pieces visible</span><Button variant="ghost" onClick={()=>{setMode(null);setState(s=>({...s,visible:[],selected:[],isolate:false}));}}>Hide all</Button></div>
+   <div className="panel-foot"><span>{visibleCount.toLocaleString()} pieces visible</span><div className="panel-foot-actions"><Button variant="ghost" onClick={()=>{setMode(null);setState(s=>({...s,visible:activeSystems.map(x=>x.id),selected:[],isolate:false}));}}>Show all</Button><Button variant="ghost" onClick={()=>{setMode(null);setState(s=>({...s,visible:[],selected:[],isolate:false}));}}>Hide all</Button></div></div>
   </section>
   {panel==='ask'&&<section className="ask-panel glass" aria-label="Ask about anatomy">
    <div className="panel-heading"><span>Ask about the body</span><Button variant="ghost" className="icon-button" onClick={()=>setPanel(null)} aria-label="Close"><X size={18}/></Button></div>
