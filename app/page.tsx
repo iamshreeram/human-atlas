@@ -109,12 +109,14 @@ export default function Home(){
    <div className="layer-presets region-presets">{REGIONS.map(r=><Button variant="ghost" key={r.id} title={r.id==='arm'?'Arm, shoulder, and hand':r.name} aria-label={r.id==='arm'?'Arm, shoulder, and hand':r.name} aria-pressed={state.region===r.id} onClick={()=>chooseRegion(r.id)}>{r.name}</Button>)}</div>
    {areas.length>0&&<><div className="panel-heading region-heading"><span>Areas</span></div>
    <div className="layer-presets area-presets">{areas.map(a=><Button variant="ghost" key={a.id} title={a.id==='brachial-plexus'?'Scalenes, clavicle, and subclavian/axillary vessels — the plexus corridor. Named plexus trunks are not in this atlas.':a.name} aria-label={a.name} aria-pressed={state.area===a.id} onClick={()=>chooseArea(a.id)}>{a.name}</Button>)}</div></>}
+   <div className="panel-scroll">
    <div className="mode-group">
     <div className="mode-heading"><span>Study modes</span>{mode&&<Button variant="ghost" className="mode-exit" onClick={reset}>Exit</Button>}</div>
     <div className="mode-list">{MODES.filter(modeReady).map(m=><Button variant="ghost" key={m.id} className={`mode-chip ${mode?.id===m.id?'active':''}`} aria-pressed={mode?.id===m.id} title={m.summary} onClick={()=>enterMode(m)}><span className="mode-name">{m.name}</span><span className="mode-size">{modeBytes[m.id]?`${(modeBytes[m.id]/1e6).toFixed(modeBytes[m.id]<1e6?2:1)} MB`:''}</span></Button>)}</div>
     {mode&&<p className="mode-summary">{mode.summary}{tour.length>1?` ${tour.length} structures in order.`:''}</p>}
    </div>
    <div className="system-list">{activeSystems.map(s=><div className={`system-row ${state.visible.includes(s.id)?'enabled':''}`} key={s.id}><Button variant="ghost" className="system-name" title={`Show only ${s.name.toLowerCase()}`} onClick={()=>{setMode(null);setState(v=>({...v,visible:[s.id],isolate:false,selected:[]}));}}><span className="system-dot" style={{background:s.color}}/>{s.name}<span className="system-count">{counts[s.id]}</span></Button><Switch checked={state.visible.includes(s.id)} onCheckedChange={()=>toggle(s.id)} aria-label={`Show ${s.name.toLowerCase()}`} /></div>)}</div>
+   </div>
    <div className="panel-foot"><span>{visibleCount.toLocaleString()} pieces visible</span><div className="panel-foot-actions"><Button variant="ghost" onClick={()=>{setMode(null);setState(s=>({...s,visible:activeSystems.map(x=>x.id),selected:[],isolate:false}));}}>Show all</Button><Button variant="ghost" onClick={()=>{setMode(null);setState(s=>({...s,visible:[],selected:[],isolate:false}));}}>Hide all</Button></div></div>
   </section>
   {panel==='ask'&&<section className="ask-panel glass" aria-label="Ask about anatomy">
